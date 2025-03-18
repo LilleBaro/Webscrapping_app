@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord | Scraping Immobilier</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">📊 Tableau de Bord</h1>
+
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% else %}
+            <!-- 📌 Formulaire de filtrage -->
+            <form class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label for="dataset" class="form-label">📂 Choisissez un dataset :</label>
+                    <select class="form-select" name="dataset" id="dataset">
+                        <option value="Appartements à louer" {% if dataset_choice=="Appartements à louer" %}selected{% endif %}>Appartements à louer</option>
+                        <option value="Appartements meublés" {% if dataset_choice=="Appartements meublés" %}selected{% endif %}>Appartements meublés</option>
+                        <option value="Terrains à vendre" {% if dataset_choice=="Terrains à vendre" %}selected{% endif %}>Terrains à vendre</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="price_min" class="form-label">💰 Prix minimum :</label>
+                    <input type="number" class="form-control" name="price_min" id="price_min" value="{{ price_min }}">
+                </div>
+
+                <div class="col-md-4">
+                    <label for="price_max" class="form-label">💰 Prix maximum :</label>
+                    <input type="number" class="form-control" name="price_max" id="price_max" value="{{ price_max }}">
+                </div>
+
+                <div class="col-md-4">
+                    <label for="location" class="form-label">📍 Quartier :</label>
+                    <select class="form-select" name="location">
+                        <option value="Tous" {% if selected_location=="Tous" %}selected{% endif %}>Tous</option>
+                        {% for location in df["adresse"].unique() %}
+                            <option value="{{ location }}" {% if selected_location==location %}selected{% endif %}>{{ location }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="rooms" class="form-label">🛏️ Nombre de chambres :</label>
+                    <select class="form-select" name="rooms" multiple>
+                        {% for room in df["nombre_chambre"].unique() %}
+                            <option value="{{ room }}" {% if room|string in selected_rooms %}selected{% endif %}>{{ room }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-primary w-100">🔍 Appliquer les filtres</button>
+                </div>
+            </form>
+
+            <!-- 📋 Aperçu des données -->
+            <h2 class="mt-4">📋 Aperçu des données</h2>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        {% for col in df.columns %}
+                            <th>{{ col }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for index, row in df.iterrows() %}
+                        <tr>
+                            {% for col in df.columns %}
+                                <td>{{ row[col] }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- 📊 Graphique de distribution des prix -->
+            {% if price_histogram %}
+                <h2 class="mt-4">💰 Répartition des prix</h2>
+                <div>{{ price_histogram | safe }}</div>
+            {% endif %}
+
+            <!-- 📈 Corrélation entre prix et Superficie -->
+            {% if price_vs_surface %}
+                <h2 class="mt-4">📈 Corrélation entre Prix et Superficie</h2>
+                <div>{{ price_vs_surface | safe }}</div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

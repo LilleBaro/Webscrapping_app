@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>🔍 Scraping des annonces Expat-Dakar</h1>
+    <p>ℹ️ Choisissez une catégorie, le nombre de pages puis lancez le scraping.</p>
+
+    <form id="scraping-form">
+        <div class="mb-3">
+            <label for="category" class="form-label">Choisissez une catégorie :</label>
+            <select class="form-select" id="category" name="category">
+                {% for category in categories %}
+                    <option value="{{ category }}">{{ category }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="max_pages" class="form-label">Nombre de pages à scraper :</label>
+            <input type="number" class="form-control" id="max_pages" name="max_pages" min="1" max="20" value="5">
+        </div>
+
+        <button type="submit" class="btn btn-primary">📥 Lancer le scraping</button>
+    </form>
+
+    <div id="result" class="mt-4"></div>
+
+    <div id="data-container" style="display:none">
+        <h3>Résultat :</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Détails</th>
+                    <th>Tags</th>
+                    <th>Adresse</th>
+                    <th>Prix</th>
+                </tr>
+            </thead>
+            <tbody id="annonces-list"></tbody>
+        </table>
+        <a id="download-link" class="btn btn-success" target="_blank">📥 Télécharger le CSV</a>
+    </div>
+</div>
+
+<script>
+document.getElementById('scraping-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const category = document.getElementById('category').value;
+    const maxPages = document.getElementById('max_pages').value;
+
+    fetch('/scraping/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category: category, max_pages: maxPages })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error("Erreur serveur");
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            document.getElementById('result').innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+            const tbody = document.getElementById('annonces-list');
+            tbody.innerHTML = '';
+            data.annonces.forEach(a => {
+                tbody.innerHTML += `<tr>
+                    <td>${a.Détails}</td>
+                    <td>${a.Tags}</td>
+                    <td>${a.Adresse}</td>
+                    <td>${a.Prix}</td>
+                </tr>`;
+            });
+            document.getElementById('data-container').style.display = 'block';
+            document.getElementById('download-link').href = '/' + data.csv_filename;
+        } else {
+            document.getElementById('result').innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+            document.getElementById('data-container').style.display = 'none';
+        }
+    })
+    .catch(err => {
+        console.log(err);
+        document.getElementById('result').innerHTML = `<div class="alert alert-danger">Erreur : ${err}</div>`;
+    });
+});
+</script>
+{% endblock %}
