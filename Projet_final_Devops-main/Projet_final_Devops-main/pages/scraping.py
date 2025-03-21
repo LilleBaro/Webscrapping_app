@@ -1,17 +1,23 @@
 from flask import Blueprint, render_template, request, jsonify
-import os
 import pandas as pd
-from scraper import*
+from scraper import scrape_expat_dakar
+import os
 
 scraping_bp = Blueprint('scraping', __name__)
 
-# 📌 Route principale pour afficher la page de scraping
+URLS = {
+    "Appartements à louer": "https://www.expat-dakar.com/appartements-a-louer",
+    "Appartements meublés": "https://www.expat-dakar.com/appartements-meubles",
+    "Terrains à vendre": "https://www.expat-dakar.com/terrains-a-vendre"
+}
+
+# ✅ Route pour afficher la page scraping
 @scraping_bp.route('/scraping', methods=['GET'])
 def show_scraping_page():
     return render_template('scraping.html', categories=URLS.keys())
 
-# 📌 Route pour exécuter le scraping et retourner les résultats en JSON
-@scraping_bp.route('/scraping/scrape', methods=['POST'])
+# ✅ Route qui lance le scraping et renvoie les résultats
+@scraping_bp.route('/scrape', methods=['POST'])
 def run_scraping():
     data = request.get_json()
     category = data.get("category")
@@ -20,19 +26,24 @@ def run_scraping():
     if category not in URLS:
         return jsonify({"success": False, "message": "Catégorie invalide."})
 
-    # Exécuter le scraping
-    annonces = scrape_expat_dakar(URLS[category], max_pages)
+    try:
+        # 📌 Lancement du scraping
+        df = scrape_expat_dakar(URLS[category], max_pages)
 
-    if not annonces:
-        return jsonify({"success": False, "message": "Aucune annonce trouvée."})
+        if df.empty:
+            return jsonify({"success": False, "message": "Aucune annonce trouvée."})
 
-    # Sauvegarder en CSV
-    csv_filename = f"static/{category.replace(' ', '_')}.csv"
-    pd.DataFrame(annonces).to_csv(csv_filename, index=False)
+        # 📌 Sauvegarde dans le dossier static
+        csv_filename = f"static/{category.replace(' ', '_')}.csv"
+        df.to_csv(csv_filename, index=False)
 
-    return jsonify({
-        "success": True,
-        "message": f"{len(annonces)} annonces récupérées.",
-        "annonces": annonces,
-        "csv_filename": csv_filename
-    })
+        # 📌 Réponse JSON avec les résultats et le lien de téléchargement
+        return jsonify({
+            "success": True,
+            "message": f"{len(df)} annonces récupérées.",
+            "annonces": df.to_dict(orient="records"),
+            "csv_filename": csv_filename
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Erreur lors du scraping : {str(e)}"})
