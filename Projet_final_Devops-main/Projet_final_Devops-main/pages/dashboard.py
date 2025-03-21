@@ -1,14 +1,14 @@
 from flask import Blueprint, render_template, request
 import plotly.express as px
 import pandas as pd
-from utils.data_handler import load_data
+from utils.data_handler import load_data1
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
 @dashboard_bp.route('/dashboard')
 def show_dashboard():
     dataset_choice = request.args.get("dataset", "Appartements à louer")
-    df = load_data(dataset_choice)
+    df = load_data1(dataset_choice)
 
     if df is None or df.empty:
         return render_template("dashboard.html", error="Fichier introuvable. Veuillez scraper les données d'abord.")
