@@ -42,7 +42,7 @@
 
             dataContainer.innerHTML = "<div class='text-center'><div class='spinner-border' role='status'></div> Chargement...</div>";
 
-            fetch(`/load_data?dataset=${dataset}`)
+            fetch(`/analysis/load_data?dataset=${encodeURIComponent(dataset)}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) {
